@@ -1,3 +1,11 @@
+mochad-0.1.17
+
+    * Added missning setClock() support for beaconing CM15A (0xA5)
+
+mochad-0.1.16
+
+    * Fix "Could not find endpoints" problem.
+
 mochad-0.1.15
 
     * Add support for newer CM19A built in 2011 or later.

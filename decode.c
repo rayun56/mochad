@@ -24,6 +24,8 @@
 #include <stdlib.h>
 #include <stdint.h>
 #include <sys/timeb.h>
+#include <time.h>
+
 #include "global.h"
 #include "decode.h"
 #include "x10state.h"
@@ -671,6 +673,32 @@ static int dup_filter(const unsigned char *buf, int len)
     return 0;
 }
 
+void setClock(void) {
+    unsigned char sendbuff[9];
+    struct tm *tm;
+    time_t t;
+    int size = 0;
+
+    time(&t);
+    tm = localtime(&t);
+
+    sendbuff[size++]= 0x9b;			//function code
+    sendbuff[size++]= tm->tm_sec;		//seconds
+    sendbuff[size++]= tm->tm_min + 60 * (tm->tm_hour & 1);		//0-199
+    sendbuff[size++]= tm->tm_hour >> 1;		//0-11 (hours/2)
+    sendbuff[size++]= tm->tm_yday;		//really 9 bits
+    sendbuff[size]= 1 << tm->tm_wday;		//daymask (7 bits)
+
+    if(tm->tm_yday & 0x100) 			//
+	sendbuff[size] |= 0x80;
+    size++;
+
+    sendbuff[size++]= 0x60;			// house (0:timer purge, 1:monitor clear, 3:battery clear
+    sendbuff[size++]= 0x00;			// Filler (???)
+
+    // Set the time properly
+    x10_write((unsigned char *) sendbuff, 8);
+}
 
 /* RF A1 ON
  * 5D 20 60 9F 00 FF 
@@ -892,16 +920,40 @@ void cm15a_decode(int fd, unsigned char *buf, unsigned int len)
 	mh_sockhexdump(fd, p, len);
     }
 
+    /*
+    ** From Dan Suther's CM11A document:
+    **
+    ** #define ACK             0x00    //* 0x00 Checksum ACK
+    ** #define READY           0x55    //* 0x55 Interface Ready
+    ** 
+    ** #define POLL            0x5A    //* 0x5A Interface Poll Signal
+    ** #define POLL_ACK        0xC3    //* 0xC3 PC response to the Poll
+    ** #define MACRO_RESP      0xFB    //* PC response to Macro poll
+    ** #define FastMacro       0xA5    //* Fast Macro Download
+    ** #define PFail           0xA5    //* Power Fail
+    ** #define STAT_REQST      0x8B    //* Status Request
+    ** #define EEPROM_EVENT    0x5B    //* EEPROM address
+    ** #define TIME_DL         0x9B    //* Response to a POLL
+    ** 
+    ** #define EnableRI        0xEB    //* Enable Ring Indicator
+    ** #define DisablRI        0xDB    //* Disable Ring Indicator
+    ** 
+    ** #define FFail           0xF3    //* Filter fail
+    ** #define CPPFail         0xA6    //* CP10 Power Fail
+    **
+    */
+
     switch (*p) 
     {
         case 0xa5:  // Want clock set
+ 	    setClock();
             break;
         case 0x55:  // ACK last send
             break;
         case 0x5a:  // PLC event
             cm15a_decode_plc(fd, p, len);
             break;
-        case 0x5b:  // ????
+        case 0x5b:  // Macro reponse
             break;
         case 0x5d:  // RF event
 #if 0

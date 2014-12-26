@@ -409,7 +409,6 @@ static int pl_tx_extended_code_1(int fd, int house, int unit, int command,
         int subcmd, int param)
 {
     unsigned char buf[7];
-    int dims;
     size_t nbuf;
     unsigned char *xmitptr;
 
@@ -778,6 +777,23 @@ int processcommandline(int fd, char *aLine)
             else
                 hua_show(fd);
         }
+	else if (strcmp(command, "QUIT") == 0) {
+	    sockprintf(fd, "Quit\r\n\0");
+	    return 0;
+	}
+        else if (strcmp(command, "HELP") == 0) {
+	    sockprintf(fd, "Help\r\n\0");
+	    return 0;
+	}
+        else if (strcmp(command, "?") == 0) {
+	    sockprintf(fd, "Help ?\r\n\0");
+	    return 0;
+	}
+        else if (strcmp(command, "HEX") == 0) {
+	    command = strtok(NULL, " ");
+	    sockprintf(fd, "Hex %s\r\n\0", command);
+	    return 0;
+	}
         else if (strcmp(command, "GETSTATUS") == 0) {
             house = getdeviceaddr(&unit);
             if ((house >= 0) && (unit >= 0)) {

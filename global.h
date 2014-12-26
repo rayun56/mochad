@@ -30,7 +30,6 @@ unsigned short RfToPl16;
 
 unsigned short RfToRf16;
 
-
 #define dbprintf(fmt, ...) _dbprintf(fmt, __FILE__,__LINE__, ## __VA_ARGS__)
 int _dbprintf(const char *fmt, ...);
 
@@ -45,3 +44,6 @@ void sockhexdump(int fd, void *p, size_t len);
 
 void mh_sockhexdump(int fd, void *p, size_t len);
 
+int or20client(int fd);
+
+int del_client(int fd);

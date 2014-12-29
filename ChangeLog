@@ -1,3 +1,7 @@
+mochad-0.1.18
+
+    * Added support for IPV6
+
 mochad-0.1.17
 
     * Added missning setClock() support for beaconing CM15A (0xA5)

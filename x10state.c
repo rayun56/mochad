@@ -83,7 +83,7 @@ void hua_sec_event(unsigned char *secaddr, unsigned int funcint,
     x10secsensor_t *sen;
 
     secaddr32 = (secaddr[0] << 16) | (secaddr[1] << 8) | secaddr[2] ;
-    /* dbprintf("secaddr32 %X func %X issecfunc %d\n", 
+    /* dbprintf("secaddr32 %X func %X issecfunc %d\n\r", 
             secaddr32, funcint, issecfunc(funcint)); */
 
     for (i = 0; i < X10sensorcount; i++) {
@@ -122,7 +122,7 @@ static void hua_dbprint(void)
                 snprintf(buf+strlen(buf), sizeof(buf)-strlen(buf), "%c%d,", h+'A', u+1);
         }
     }
-    strcat(buf, "\n");
+    strcat(buf, "\n\r");
     dbprintf(buf);
 
     strcpy(buf, "State: ");
@@ -133,7 +133,7 @@ static void hua_dbprint(void)
                         HouseUnitState[h][u]);
         }
     }
-    strcat(buf, "\n");
+    strcat(buf, "\n\r");
     dbprintf(buf);
 }
 
@@ -154,7 +154,7 @@ unsigned char hua_getstatus_xdim(int house, int unit)
 
 void hua_setstatus_xdim(int house, int unit, int xdim)
 {
-    /* dbprintf("%s(%d,%d)\n", __func__, house, xdim); */
+    /* dbprintf("%s(%d,%d)\n\r", __func__, house, xdim); */
     hua_init(house);
     HouseUnitSelected[house][unit] = '1';
     X10protostate[house] = 1;
@@ -177,7 +177,7 @@ void hua_add(int house, int unit)
             X10protostate[house] = 0;
             break;
         default:
-            dbprintf("Invalid state\n");
+            dbprintf("Invalid state\n\r");
     }
     // hua_dbprint();
 }
@@ -211,7 +211,7 @@ static void hua_func(int house, unsigned char func)
 {
     int u;
 
-    /* dbprintf("%s(%d,%d)\n", __func__, house, func); */
+    /* dbprintf("%s(%d,%d)\n\r", __func__, house, func); */
     X10protostate[house] = 1;
     for (u = 0; u < 16; u++) {
         if (HouseUnitSelected[house][u]) {
@@ -223,7 +223,7 @@ static void hua_func(int house, unsigned char func)
         }
     }
     // hua_dbprint();
-    /* dbprintf("%s exit\n", __func__); */
+    /* dbprintf("%s exit\n\r", __func__); */
 }
 
 void hua_func_on(int house)
@@ -241,11 +241,11 @@ int hua_getstatus_sec(int rf8bitaddr, unsigned long rfaddr)
     x10secsensor_t *sen;
     int sensor;
 
-    dbprintf("hua_getstatus_sec(%d,%X)\n", rf8bitaddr, rfaddr);
+    dbprintf("hua_getstatus_sec(%d,%X)\n\r", rf8bitaddr, rfaddr);
     for (sensor = 0; sensor < X10sensorcount; sensor++) {
         sen = &X10sensors[sensor];
 
-        dbprintf("hua_getstatus_sec addr8 %d addr %X status %X\n",
+        dbprintf("hua_getstatus_sec addr8 %d addr %X status %X\n\r",
                 sen->secaddr8, sen->secaddr, sen->sensorstatus);
         if (rf8bitaddr && sen->secaddr8 && (rfaddr == sen->secaddr)) {
             switch (sen->sensorstatus) {
@@ -290,7 +290,7 @@ void hua_show(int fd)
     int sensor;
     x10secsensor_t *sen;
 
-    sockprintf(fd, "Device selected\n");
+    sockprintf(fd, "Device selected\n\r");
     for (h = 0; h < 16; h++) {
         labeldone = 0;
         buf[0] = '\0';
@@ -307,12 +307,12 @@ void hua_show(int fd)
             }
         }
         if (labeldone) {
-            strcat(buf, "\n");
+            strcat(buf, "\n\r");
             sockprintf(fd, buf, strlen(buf));
         }
     }
     
-    sockprintf(fd, "Device status\n");
+    sockprintf(fd, "Device status\n\r");
     for (h = 0; h < 16; h++) {
         labeldone = 0;
         buf[0] = '\0';
@@ -329,11 +329,11 @@ void hua_show(int fd)
             }
         }
         if (labeldone) {
-            strcat(buf, "\n");
+            strcat(buf, "\n\r");
             sockprintf(fd, buf, strlen(buf));
         }
     }
-    sockprintf(fd, "Security sensor status\n");
+    sockprintf(fd, "Security sensor status\n\r");
     qsort(X10sensors, X10sensorcount, sizeof(X10sensors[0]), cmpX10sensor);
     for (sensor = 0; sensor < X10sensorcount; sensor++) {
         time_t deltat, mins;
@@ -347,9 +347,9 @@ void hua_show(int fd)
             message = findSecRemoteKeyName(sen->sensorstatus);
         else
             message = findSecEventName(sen->sensorstatus);
-        sockprintf(fd, "Sensor addr: %06X Last: %02d:%02d %s \n", sen->secaddr,
+        sockprintf(fd, "Sensor addr: %06X Last: %02d:%02d %s \n\r", sen->secaddr,
                 mins, deltat, message);
     }
 
-    sockprintf(fd, "End status\n");
+    sockprintf(fd, "End status\n\r");
 }

@@ -44,6 +44,9 @@
 /**** system log ****/
 #include <syslog.h>
 
+/**** ioctl ****/
+#include <sys/ioctl.h>
+
 /* Multiple On-line Controllers Home Automation Daemon */
 #define DAEMON_NAME "mochad"
 
@@ -59,15 +62,18 @@
 #define SERVER_PORT     (1099)
 #define MAXCLISOCKETS   (32)
 #define MAXSOCKETS      (1+MAXCLISOCKETS)
-				/* first socket=listen socket, 20 client sockets */
+				/* first socket=listen socket, 32 client sockets */
 #define USB_FDS         (10)    /* libusb file descriptors */
+
 static struct pollfd Clients[(3*MAXSOCKETS)+USB_FDS];
+
 /* Client sockets */
 static struct pollfd Clientsocks[MAXCLISOCKETS];
 static struct pollfd Clientxmlsocks[MAXCLISOCKETS];
 static struct pollfd Clientor20socks[MAXCLISOCKETS];
-static size_t NClients;     /* # of valid entries in Clientsocks */
-static size_t NxmlClients;  /* # of valid entries in Clientxmlsocks */
+
+static size_t NClients;     /* # of valid entries in Clientsocks     */
+static size_t NxmlClients;  /* # of valid entries in Clientxmlsocks  */
 static size_t Nor20Clients; /* # of valid entries in Clientor20socks */
 
 /**** USB usblib 1.0 ****/
@@ -75,9 +81,10 @@ static size_t Nor20Clients; /* # of valid entries in Clientor20socks */
 #include <libusb-1.0/libusb.h>
 uint8_t InEndpoint, OutEndpoint;
 
-static struct libusb_device_handle *Devh = NULL;
+static struct libusb_device_handle *Devh        = NULL;
 static struct libusb_transfer *IntrOut_transfer = NULL;
-static struct libusb_transfer *IntrIn_transfer = NULL;
+static struct libusb_transfer *IntrIn_transfer  = NULL;
+
 static unsigned char IntrOutBuf[8];
 static unsigned char IntrInBuf[8];
 
@@ -602,7 +609,9 @@ static int mydaemon(void)
     int clifd, listenfd, flashxmlfd, or20fd;
     unsigned char buf[1024];
     int bytesIn;
-    struct sockaddr_in cliaddr, servaddr;
+
+//   struct sockaddr_in cliaddr, servaddr;
+
     int rc;
     static const int optval=1;
 
@@ -693,9 +702,55 @@ static int mydaemon(void)
     */
 
     /**** sockets ****/
+#if defined(IPV6)
+    /* -------------------------------------------------------------------- */
+    /* Listen socket for IPv4 clients*/
+
+    // http://publib.boulder.ibm.com/infocenter/iseries/v6r1m0/topic/rzab6/xacceptboth.htm
+    // http://tldp.org/HOWTO/html_single/Linux+IPv6-HOWTO/#CHAPTER-PROGRAMMING
+    // may be of interest: network programming
+    // http://www.cs.utah.edu/~swalton/listings/sockets/programs/
+
+    /*
+    ** Careful! This part is not ready yet!
+    */
+    struct sockaddr_in6 servaddr, cliaddr;
+
+    int on = 1;
+
+    listenfd = socket(AF_INET6, SOCK_STREAM, 0);
+    dbprintf("listenfd %d\n", listenfd);
+
+    /*********************************************************************/
+    /* After the socket descriptor is created, a bind() function gets a  */
+    /* unique name for the socket.  In this example, the user sets the   */
+    /* address to in6addr_any, which (by default) allows connections to  */
+    /* be established from any IPv4 or IPv6 client that specifies port   */
+    /* SERVER_PORT. (that is, the bind is done to both the IPv4 and IPv6 */
+    /* TCP/IP stacks).  This behavior can be modified using the          */
+    /* IPPROTO_IPV6 level socket option IPV6_V6ONLY if required.         */
+    /*********************************************************************/
+
+    // As per:
+    // http://publib.boulder.ibm.com/infocenter/iseries/v6r1m0/topic/rzab6/xacceptboth.htm
+
+    memset(&servaddr, 0, sizeof(servaddr));
+
+    servaddr.sin6_family = AF_INET6;
+    servaddr.sin6_addr   = in6addr_any;
+    servaddr.sin6_port   = htons(SERVER_PORT); // Same server port as IPv4
+
+    /* -------------------------------------------------------------------- */
+    /* Listen socket for IPv6 Flash XML clients */
+    // IPv6 port+1
+
+    /* -------------------------------------------------------------------- */
+#else
     /* -------------------------------------------------------------------- */
     /* Listen socket for IPv4 */
     // IPv4
+    struct sockaddr_in servaddr, cliaddr;
+
     listenfd = socket(AF_INET, SOCK_STREAM, 0);
     dbprintf("listenfd %d\n", listenfd);
 
@@ -704,15 +759,64 @@ static int mydaemon(void)
     servaddr.sin_family      = AF_INET;
     servaddr.sin_addr.s_addr = htonl(INADDR_ANY);
     servaddr.sin_port        = htons(SERVER_PORT);
+#endif
 
-    rc = setsockopt(listenfd, SOL_SOCKET, SO_REUSEADDR, &optval, sizeof(optval));
-    dbprintf("setsockopt() %d/%d\n", rc, errno);
+    /********************************************************************/
+    /* The setsockopt() function is used to allow the local address to  */
+    /* be reused when the server is restarted before the required wait  */
+    /* time expires.                                                    */
+    /********************************************************************/
+    if(setsockopt(listenfd, SOL_SOCKET, SO_REUSEADDR, (char *)&on, sizeof(on)) < 0) {
+      perror("setsockopt(SO_REUSEADDR) failed");
+      exit(errno);
+    }
+
+    //rc = setsockopt(listenfd, SOL_SOCKET, SO_REUSEADDR, &optval, sizeof(optval));
+    //dbprintf("setsockopt() %d/%d\n", rc, errno);
+
     rc = bind(listenfd, (struct sockaddr*) &servaddr, sizeof(servaddr));
     dbprintf("bind() %d/%d\n", rc, errno);
+
     rc = listen(listenfd, 128);
+    // Why am I doing this ???
+    ioctl(listenfd, FIONBIO, &on);
     dbprintf("listen() %d/%d\n", rc, errno);
 
+#ifdef IPV6
+    /* -------------------------------------------------------------------- */
+    /* Listen spcket for IPv4 clients*/
+
+    flashxmlfd = socket(AF_INET6, SOCK_STREAM, 0);
+    dbprintf("flashxmlfd %d\n", flashxmlfd);
+
+    /*********************************************************************/
+    /* After the socket descriptor is created, a bind() function gets a  */
+    /* unique name for the socket.  In this example, the user sets the   */
+    /* address to in6addr_any, which (by default) allows connections to  */
+    /* be established from any IPv4 or IPv6 client that specifies port   */
+    /* SERVER_PORT. (that is, the bind is done to both the IPv4 and IPv6 */
+    /* TCP/IP stacks).  This behavior can be modified using the          */
+    /* IPPROTO_IPV6 level socket option IPV6_V6ONLY if required.         */
+    /*********************************************************************/
+
+    // As per:
+    // http://publib.boulder.ibm.com/infocenter/iseries/v6r1m0/topic/rzab6/xacceptboth.htm
+
+    memset(&servaddr, 0, sizeof(servaddr));
+
+    servaddr.sin6_family = AF_INET6;
+    servaddr.sin6_addr   = in6addr_any;
+    servaddr.sin6_port   = htons(SERVER_PORT+1); // Same server port as IPv4
+
+    /* -------------------------------------------------------------------- */
+    /* Listen socket for IPv6 Flash XML clients */
+    // IPv6 port+1
+
+    /* -------------------------------------------------------------------- */
+#else
+    /* -------------------------------------------------------------------- */
     /* Listen socket for Flash XML clients */
+    // IPv4 port+1
     flashxmlfd = socket(AF_INET, SOCK_STREAM, 0);
     dbprintf("flashxmlfd %d\n", flashxmlfd);
 
@@ -721,36 +825,104 @@ static int mydaemon(void)
     servaddr.sin_family      = AF_INET;
     servaddr.sin_addr.s_addr = htonl(INADDR_ANY);
     servaddr.sin_port        = htons(SERVER_PORT+1);
+#endif
+    /********************************************************************/
+    /* The setsockopt() function is used to allow the local address to  */
+    /* be reused when the server is restarted before the required wait  */
+    /* time expires.                                                    */
+    /********************************************************************/
+    if(setsockopt(flashxmlfd, SOL_SOCKET, SO_REUSEADDR, (char *)&on, sizeof(on)) < 0) {
+      perror("setsockopt(SO_REUSEADDR) failed");
+      exit(errno);
+    }
 
-    rc = setsockopt(flashxmlfd, SOL_SOCKET, SO_REUSEADDR, &optval, sizeof(optval));
-    dbprintf("setsockopt() %d/%d\n", rc, errno);
+    //rc = setsockopt(flashxmlfd, SOL_SOCKET, SO_REUSEADDR, &optval, sizeof(optval));
+    //dbprintf("setsockopt() %d/%d\n", rc, errno);
+
     rc = bind(flashxmlfd, (struct sockaddr*) &servaddr, sizeof(servaddr));
     dbprintf("bind() %d/%d\n", rc, errno);
+
     rc = listen(flashxmlfd, 128);
     dbprintf("listen() %d/%d\n", rc, errno);
 
+    /* -------------------------------------------------------------------- */
+    /* Listen socket for IPv6 Flash XML clients */
+    // IPv6 port+1
+
+    /* -------------------------------------------------------------------- */
+
+#if defined(IPV6)
+    /* -------------------------------------------------------------------- */
+    /* Listen socket for IPv4 clients*/
+
+    or20fd = socket(AF_INET6, SOCK_STREAM, 0);
+    dbprintf("flashxmlfd %d\n", flashxmlfd);
+
+    /*********************************************************************/
+    /* After the socket descriptor is created, a bind() function gets a  */
+    /* unique name for the socket.  In this example, the user sets the   */
+    /* address to in6addr_any, which (by default) allows connections to  */
+    /* be established from any IPv4 or IPv6 client that specifies port   */
+    /* SERVER_PORT. (that is, the bind is done to both the IPv4 and IPv6 */
+    /* TCP/IP stacks).  This behavior can be modified using the          */
+    /* IPPROTO_IPV6 level socket option IPV6_V6ONLY if required.         */
+    /*********************************************************************/
+
+    // As per:
+    // http://publib.boulder.ibm.com/infocenter/iseries/v6r1m0/topic/rzab6/xacceptboth.htm
+
+    memset(&servaddr, 0, sizeof(servaddr));
+
+    servaddr.sin6_family = AF_INET6;
+    servaddr.sin6_addr   = in6addr_any;
+    servaddr.sin6_port   = htons(SERVER_PORT+2); // Same server port as IPv4
+#else
+    /* -------------------------------------------------------------------- */
+    /* Listen socket for Flash XML clients */
+    // IPv4 port+1
     /* Listen socket for OR 2.0 clients */
     or20fd = socket(AF_INET, SOCK_STREAM, 0);
     dbprintf("or20fd %d\n", or20fd);
-    memset(&servaddr, 0, sizeof(servaddr));
-    servaddr.sin_family = AF_INET;
-    servaddr.sin_addr.s_addr = htonl(INADDR_ANY);
-    servaddr.sin_port = htons(SERVER_PORT+2);
 
-    rc = setsockopt(or20fd, SOL_SOCKET, SO_REUSEADDR, &optval, sizeof(optval));
-    dbprintf("setsockopt() %d/%d\n", rc, errno);
+    memset(&servaddr, 0, sizeof(servaddr));
+
+    servaddr.sin_family      = AF_INET;
+    servaddr.sin_addr.s_addr = htonl(INADDR_ANY);
+    servaddr.sin_port        = htons(SERVER_PORT+2);
+#endif
+
+    /********************************************************************/
+    /* The setsockopt() function is used to allow the local address to  */
+    /* be reused when the server is restarted before the required wait  */
+    /* time expires.                                                    */
+    /********************************************************************/
+    if(setsockopt(or20fd, SOL_SOCKET, SO_REUSEADDR, (char *)&on, sizeof(on)) < 0) {
+      perror("setsockopt(SO_REUSEADDR) failed");
+      exit(errno);
+    }
+
+    //rc = setsockopt(or20fd, SOL_SOCKET, SO_REUSEADDR, &optval, sizeof(optval));
+    //dbprintf("setsockopt() %d/%d\n", rc, errno);
+
     rc = bind(or20fd, (struct sockaddr*) &servaddr, sizeof(servaddr));
     dbprintf("bind() %d/%d\n", rc, errno);
+
     rc = listen(or20fd, 128);
     dbprintf("listen() %d/%d\n", rc, errno);
 
+    /* -------------------------------------------------------------------- */
+
     init_client();
+
     Clients[0].fd = listenfd;
     Clients[0].events = POLLIN;
+
     Clients[1].fd = flashxmlfd;
     Clients[1].events = POLLIN;
+
     Clients[2].fd = or20fd;
     Clients[2].events = POLLIN;
+
     PollTimeOut = -1;
 
     while (!Do_exit) {

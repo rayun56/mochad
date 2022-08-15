@@ -8,7 +8,12 @@ EXTRA_DIST = udev/91-usb-x10-controllers.rules hotplug2/20-usb-x10 hotplug2/moch
 
 install-exec-hook:
 	if test -d /etc/udev/rules.d ; then \
+		cp $(abs_top_srcdir)/systemd/mochad.service /etc/systemd/system ; \
 		cp $(abs_top_srcdir)/udev/91-usb-x10-controllers.rules /etc/udev/rules.d ; \
+	else \
+		if test -d /etc/udev/rules.d ; then \
+			cp $(abs_top_srcdir)/udev/91-usb-x10-controllers.rules.initd /etc/udev/rules.d/91-usb-x10-controllers.rule ; \
+		fi ; \
 	fi ;
 	if test -d /etc/hotplug.d/usb ; then \
 		cp $(abs_top_srcdir)/hotplug2/20-usb-x10 /etc/hotplug.d/usb ; \

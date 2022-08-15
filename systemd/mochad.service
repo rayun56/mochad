@@ -1,0 +1,13 @@
+[Unit]
+Description=Mochad a TCP gateway service for X10-RF (CM15A/CM15Pro/CM19A)
+Requires=systemd-udevd.service
+After=systemd-udevd.service
+
+[Service]
+Type=forking
+GuessMainPID=yes
+ExecStart=/usr/local/bin/mochad
+Restart=on-abort
+
+[Install]
+WantedBy=multi-user.target

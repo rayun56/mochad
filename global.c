@@ -24,6 +24,8 @@
 
 int Cm19a = 0;
 
+int PollTimeOut = -1;
+
 /* 1 bit per house code, 1=RF to PL, 0=off, default all house codes on */
 unsigned short RfToPl16 = 0xFFFF;
 

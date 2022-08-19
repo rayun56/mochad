@@ -6,13 +6,15 @@ PL (power line) controllers.
 
 ## Why this fork
 
-Changes were needed to the [Neil Cherry fork](https://github.com/linuxha/mochad) to compile and install `mochad` on recent 64 bit versions of Linux with the `systemd` init system. Specifically these have been tested on 
+Changes were needed to the [Neil Cherry (linuxha) fork](https://github.com/linuxha/mochad) to compile and install `mochad` on recent 64 bit versions of Linux with the `systemd` init system. Specifically these have been tested on 
 
-- x86_64 GNU/Linux : Mint 20.1 Ubuntu 20.04 LTS (Focal) Linux 5.4.0-124
+- x86_64 GNU/Linux : Mint 20.1, Ubuntu 20.04 LTS (focal), Linux 5.4.0-124
 
-- aarch64 GNU/LInux : Armbian 22.05.3 Ubuntu 22.04.1 LTS (Jammy) Linux 5.10.123-meson64 
+- aarch64 GNU/Linux : Armbian 22.05.3, Ubuntu 22.04.1 LTS (jammy), Linux 5.10.123-meson64 
 
-## Changes
+- aarch64 GNU/Linux : Raspberry Pi OS 2022-04-04, Debian 11.4 (bullseye), Linux 5.15.32-v8+
+
+## Need for Changes
 
 ### Source
 
@@ -33,14 +35,22 @@ The `mochad` service was not installed properly in `systemd` and it would stop f
 
 error. 
 
-The solution was to bring back the installation provided by the original author nnauka in [mochad-0.1.17](https://sourceforge.net/projects/mochad/files/).
+The solution was to restore the `systemd` and `udev` directories found in the original [mochad-0.1.17](https://sourceforge.net/projects/mochad/files/) repository by mmauka. Modification of the `Makefile.am` was also necessary.
 
 
 ## Installation of `mochad`
 
 ### Prerequisite
 
-    sudo apt install libusb-1.0-0-dev
+    $ sudo apt install libusb-1.0-0-dev
+
+On the Raspberry Pi it was also necessary to install `autoconf`
+
+    $ sudo apt install autoconf
+
+While not strictly necessary, `netcat` is useful when testing the `mochad` deaemon. It was present on two of the test platforms but it had to be added on the Raspberry Pi.    
+
+    $ sudo apt install netcat-openbsd
 
 ### Getting the source
 
@@ -48,56 +58,56 @@ The source code on GitHub can be obtained with any one of the usual methods. Not
 
 #### by cloning the repository
 
-```
-  $ git clone https://github.com/sigmdel/mochad.git
-  $ cd mochad
-```
+    $ git clone https://github.com/sigmdel/mochad.git
+    $ cd mochad
+
 
 #### by downloading the archive
 
+    $ wget https://github.com/sigmdel/mochad/archive/refs/heads/master.zip
+    $ unzip master.zip
+    $ cd mochad-master
+   
+
+### Enabling IPV6 support
+
+By default, IPV6 is not enabled until the value of the IPV6 macro at the very start of `mochad.c` is changed.
+
+```c
+  #define IPV6    1
 ```
-  $ wget https://github.com/sigmdel/mochad/archive/refs/heads/master.zip
-  $ unzip master.zip
-  $ cd mochad-master
-```    
+I do not use IPV6 and have not tested that code at all. Any questions about that feature would have to be addressed to its author, [Neil Cherry](https://github.com/linuxha/mochad).
 
 ### Compiling the source
 
 From within the directory containing the source
 
-```
     $ ./autogen.sh
     $ make
-```
+
 
 While it should be, make sure `autogen.sh` is an executable
 
-```
     $ chmod +x autogen.sh 
-```
+
 if needed.    
 
 ### Installing the package
 
-```
     $ sudo make install
-```
 
 Again within the directory containing the source.
 
-### Installed files
+### Installed files and cleanup
 
+     /etc/local/bin/mochad
+     /etc/udev/rules/91-usb-x10-controllers.rules
 
-```
-   /etc/local/bin/mochad
-   /etc/udev/rules/91-usb-x10-controllers.rules
-```
 
 In `systemd` the service file is also installed
 
-```
-   /etc/systemd/system/mochad.service 
-```
+     /etc/systemd/system/mochad.service 
+
 
 Once the installation is completed, all the other downloaded and generated files can be deleted if desired.
 
@@ -105,17 +115,11 @@ Once the installation is completed, all the other downloaded and generated files
 
 The [original README](README) text file contains much more information.
 
-## History and Attributions
+The version of `mochad.service` found in this fork comes from Andreas's [2021-09-07 post](https://sourceforge.net/p/mochad/discussion/1320002/thread/764dd1ce44/#76e9) on the flimsy grounds that the unit file looks more sophisticated. Compare it with [another version](https://github.com/ermshiperete/mochad/blob/master/systemd/mochad.service) by Eberhard Beilharz (ermshiperete).
 
-The last version of`mochad` by its original author, mmauka, is version 0.1.17 [published on Sourceforge in 2016-06-10](https://sourceforge.net/projects/mochad/files/).  That version will no longer compile on Ubuntu 20.04 because of an outdated `configure` script. 
+Steve Porter provides a fork of the mmauka 0.0.17 version which he presents as [mochad-0.1.21](https://sourceforge.net/p/mochad/discussion/1320002/thread/9e758b6afc/7c52/attachment/mochad-0.1.21.tgz). It is a different solution to the compilation problem. See details [here](https://sourceforge.net/p/mochad/discussion/1320002/thread/9e758b6afc/).
 
-In 2010, Boris Jonica (bjonica) created a GitHub repository forking version 0.1.14. A year later, an `autogen` script was added which generates a `configure` script which will allow compilation under recent Linux distributions. This is actually a contribution by Nicholas Humfrey (njh). The [bjonica/mochad repository](https://github.com/bjonica/mochad) has been updated to incorporate version 0.1.17 of `mochad` by mmauka except for the files needed in `system.d` for some reason.
-
-Neil Cherry (linuxha) forked the bjonica repository and released what is labelled as version 0.1.18. It adds optional support for IPV6 although this is not enabled by default (see the IPV6 macro at the start of `mochad.c`). Again the `mochad.service` file and associated `udev` rules needed in `systemd` were not included.
-
-The source of the `usb_claim_interface failed -6` problem in using `mochad` with `systemd` was identified by [Vicente](https://sourceforge.net/p/mochad/discussion/1320002/thread/1bef8f39/#8250) back in 2016-04-07. Patrick Kuijvenhoven (petski) provided a working `systemd.service` file in a [2016-04-15](https://github.com/petski/mochad/tree/c46f2f789d795d6140e24ee9b25656e180d23bd8) commit of a fork of the SourceForge code. There were no `udev` rules and his [2016-04-15 post](https://sourceforge.net/p/mochad/discussion/1320002/thread/1bef8f39/#1f85) on SourceForge has a line deleting the previous `udev` rules. Presumably, the service file was to be enabled and hence loaded at boot time. 
-
-As already stated, version 0.1.17 by mmauka already had the solution which was for the most part reintroduced in this fork. The version of `mochad.service` found in this fork comes from Andreas' [2021-09-07 post](https://sourceforge.net/p/mochad/discussion/1320002/thread/764dd1ce44/#76e9) on the grounds that the unit file looks more sophisticated to me... but then what do I know?
+More information about this fork in excruciating details at [Mochad on Recent Linux Distributions](https://sigmdel.ca/michel/ha/domoticz/mochad_on_recent_linux_distro_en.html).
 
 ## License
 

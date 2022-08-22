@@ -1,7 +1,7 @@
 # MOCHAD
 
-`mochad` is a Linux TCP gateway daemon for the X10 CM15A and CM19A RF (radio frequency) and
-PL (power line) controllers. 
+`mochad` is a Linux TCP gateway daemon for the X10 CM15A RF (radio frequency) and
+PL (power line) and the CM19A RF controllers. 
 
 
 ## Why this fork
@@ -39,6 +39,9 @@ The solution was to restore the `systemd` and `udev` directories found in the or
 
 
 ## Installation of `mochad`
+
+**FR:** Il y a une [traduction en français de ces instructions](https://sigmdel.ca/michel/ha/domoticz/mochad_on_recent_linux_distro_fr.html#installation). 
+
 
 ### Prerequisite
 
@@ -100,7 +103,7 @@ Again within the directory containing the source.
 
 ### Installed files and cleanup
 
-     /etc/local/bin/mochad
+     /usr/local/bin/mochad
      /etc/udev/rules/91-usb-x10-controllers.rules
 
 
@@ -120,6 +123,8 @@ The version of `mochad.service` found in this fork comes from Andreas's [2021-09
 Steve Porter provides a fork of the mmauka 0.0.17 version which he presents as [mochad-0.1.21](https://sourceforge.net/p/mochad/discussion/1320002/thread/9e758b6afc/7c52/attachment/mochad-0.1.21.tgz). It is a different solution to the compilation problem. See details [here](https://sourceforge.net/p/mochad/discussion/1320002/thread/9e758b6afc/).
 
 More information about this fork in excruciating details at [Mochad on Recent Linux Distributions](https://sigmdel.ca/michel/ha/domoticz/mochad_on_recent_linux_distro_en.html).
+
+**FR:** Il a plus de détails au sujet de cette fourche dans un billet intitulé [Mochad sur les distributions Linux récentes](https://sigmdel.ca/michel/ha/domoticz/mochad_on_recent_linux_distro_fr.html). 
 
 ## License
 

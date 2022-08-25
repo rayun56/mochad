@@ -39,7 +39,7 @@ The solution was to restore the `systemd` and `udev` directories found in the or
 
 ## Patching version 0.1.17 by mmauka
 
-Instead of installing this fork, one could apply a couple of small patches to version 0.1.17 of `mochad` from the original author mmauka. Details are [here](res/README.me). 
+Instead of installing this fork, one could apply a couple of small patches to version 0.1.17 of `mochad` from the original author mmauka. The patches and details are [res directory](res/README.md).  
 
 If IPV6 support is needed then this fork will have to be installed as explained next.
 

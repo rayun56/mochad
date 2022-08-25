@@ -4,7 +4,7 @@
 PL (power line) and the CM19A RF controllers. 
 
 
-## Why this fork
+## Why this fork ?
 
 Changes were needed to the [Neil Cherry (linuxha) fork](https://github.com/linuxha/mochad) to compile and install `mochad` on recent 64 bit versions of Linux with the `systemd` init system. Specifically these have been tested on 
 
@@ -37,6 +37,11 @@ error.
 
 The solution was to restore the `systemd` and `udev` directories found in the original [mochad-0.1.17](https://sourceforge.net/projects/mochad/files/) repository by mmauka. Modification of the `Makefile.am` was also necessary.
 
+## Patching version 0.1.17 by mmauka
+
+Instead of installing this fork, one could apply a couple of small patches to version 0.1.17 of `mochad` from the original author mmauka. Details are [here](res/README.me). 
+
+If IPV6 support is needed then this fork will have to be installed as explained next.
 
 ## Installation of `mochad`
 

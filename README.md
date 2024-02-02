@@ -6,7 +6,7 @@ PL (power line) and the CM19A RF controllers.
 
 ## Why this fork ?
 
-Changes were needed to the [Neil Cherry (linuxha) fork](https://github.com/linuxha/mochad) to compile and install `mochad` on recent 64 bit versions of Linux with the `systemd` init system. Specifically these have been tested on 
+Changes were needed to the [Neil Cherry (linuxha) fork](https://github.com/linuxha/mochad) to compile and install `mochad` on recent versions of Linux with the `systemd` init system. Specifically this fork has been tested on 
 
 - x86_64 GNU/Linux : Mint 20.1, Ubuntu 20.04 LTS (focal), Linux 5.4.0-124
 
@@ -14,7 +14,9 @@ Changes were needed to the [Neil Cherry (linuxha) fork](https://github.com/linux
 
 - aarch64 GNU/Linux : Raspberry Pi OS 2022-04-04, Debian 11.4 (bullseye), Linux 5.15.32-v8+
 
-- aarch64 GNU/Linux : Raspberry Pi OS 2023-05-03, Debian 11.7 (bullseye), Linux 6.1.21-v8+
+And also tested on the latest 32 bit version of Raspberry Pi OS for ArmV6 (for Raspberry Pi B and Raspberry Pi Zero)
+
+- armv6l GNU/Linux : Raspberry Pi OS 2024-01-25, Debian 12.1 (bookworm), Linux 6.1.0
 
 ## Need for Changes
 
@@ -90,19 +92,17 @@ I do not use IPV6 and have not tested that code at all. Any questions about that
 
 ### Compiling the source
 
-While it should be, make sure that `autogen.sh` in the `mochad-master` directory is an executable
+From within the directory containing the source
+
+    $ ./autogen.sh
+    $ make
+
+
+While it should be, make sure `autogen.sh` is an executable
 
     $ chmod +x autogen.sh 
 
-From within the directory, run the `autogen` script.
-
-    $ ./autogen.sh
-
-This will create the `Makefile`, so now run `make`.
-
-
-    $ make
-
+if needed.    
 
 ### Installing the package
 
@@ -113,15 +113,27 @@ Again within the directory containing the source.
 ### Installed files and cleanup
 
      /usr/local/bin/mochad
-     /etc/udev/rules.d/91-usb-x10-controllers.rules
+     /etc/udev/rules/91-usb-x10-controllers.rules
 
 
-In `systemd` systems such as Raspberry Pi OS, the service file is also installed
+In `systemd` the service file is also installed
 
      /etc/systemd/system/mochad.service 
 
+Note that the service will remain inactive until a CM1xA is connected to the system.
 
 Once the installation is completed, all the other downloaded and generated files can be deleted if desired.
+
+## Still getting `usb_claim_interface failed -6` error
+
+If after installation and after the mochad.service is activated by plugging in a CM19A a `usb_claim_interface failed -6` is present check if the ati_remote driver is running.
+
+    $ lsmod | grep ati
+    ati_remote              9260  0   
+
+The Lola remote for ATI All-In-Wonder video card has the same `0x0bc7:0x002` id as the CM19A. Because of that, the [ati_remote](https://git.kernel.org/pub/scm/linux/kernel/git/stable/linux.git/tree/drivers/media/rc/ati_remote.c) driver will be loaded. Blacklist the module and the problem should be solved. 
+
+     $ echo "blacklist ati_remote" | sudo tee /usr/lib/modprobe.d/ati-remote-blacklist.conf
 
 ## More information
 
@@ -129,7 +141,7 @@ The [original README](README) text file contains much more information.
 
 The version of `mochad.service` found in this fork comes from Andreas's [2021-09-07 post](https://sourceforge.net/p/mochad/discussion/1320002/thread/764dd1ce44/#76e9) on the flimsy grounds that the unit file looks more sophisticated. Compare it with [another version](https://github.com/ermshiperete/mochad/blob/master/systemd/mochad.service) by Eberhard Beilharz (ermshiperete).
 
-Steve Porter provides a fork of the mmauka 0.0.17 version which he presents as [mochad-0.1.21](https://sourceforge.net/p/mochad/discussion/1320002/thread/9e758b6afc/7c52/attachment/mochad-0.1.21.tgz). It is a different solution to the compilation problem. See details [here](https://sourceforge.net/p/mochad/discussion/1320002/thread/9e758b6afc/).
+Steve Porter provides a fork of the mmauka 0.0.17 version which he presents as [mochad-0.1.21](https://sourceforge.net/p/mochad/discussion/1320002/thread/9e758b6afc/7c52/attachment/mochad-0.1.21.tgz). It is a different solution to the compilation problem. See details [here](https://sourceforge.net/p/mochad/discussion/1320002/thread/9e758b6afc/). Casey Langen (clangen) has incorporated the changes by Steve Porter into another [mochad](https://github.com/clangen/mochad) GitHub repository.
 
 More information about this fork in excruciating details at [Mochad on Recent Linux Distributions](https://sigmdel.ca/michel/ha/domoticz/mochad_on_recent_linux_distro_en.html).
 

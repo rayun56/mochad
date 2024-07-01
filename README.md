@@ -17,12 +17,13 @@ PL (power line) and the CM19A RF controllers.
   - [4.3. Enable IPV6 support (optional)](#43-enable-ipv6-support-optional)
   - [4.4. Compile the source](#44-compile-the-source)
   - [4.5. Install the package](#45-install-the-package)
-  - [4.6. Check the presence of installed files](#46-check-the-presence-of-installed-files)
+  - [4.6. Confirm the presence of installed files](#46-confirm-the-presence-of-installed-files)
 - [5. Test](#5-test)
 - [6. USB Interface Error](#6-usb-interface-error)
 - [7. Cleanup](#7-cleanup)
 - [8. More Information](#8-more-information)
-- [9. License](#9-license)
+- [9. Shameless Self Promotion](#9-shameless-self-promotion)
+- [10. License](#10-license)
 
 <!-- /TOC -->
 
@@ -196,6 +197,10 @@ More information about this fork in excruciating details at [Mochad on Recent Li
 
 **FR:** Il a plus de détails au sujet de cette fourche dans un billet intitulé [Mochad sur les distributions Linux récentes](https://sigmdel.ca/michel/ha/domoticz/mochad_on_recent_linux_distro_fr.html). 
 
-## 9. License
+## 9. Shameless Self Promotion
+
+The [Domoticz](https://www.domoticz.com/) *Mochad CM15Pro/CM19A bridge with LAN interface* decodes only the On and Off packets received from `mochad`. When the Mochad bridge receives Dim or Bright packets from `mochad`, it reports a decode error. The [mochas](https://github.com/sigmdel/mochas) repository contains a Python script that can be run as a service connected to `mochad` to handle these packets.
+
+## 10. License
 
 GNU General Public License version 3.0 (GPLv3) according to the [original project page on SourceForge](https://sourceforge.net/projects/mochad/).

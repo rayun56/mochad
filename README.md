@@ -1,3 +1,13 @@
+# Why another fork???
+rayun56 here. This is a very simple fork of sigmdel's mochad fork, which simply reverts the line endings returned to
+netcat clients from `\n\r` to `\n`. Why is this needed? In a nutshell, home assistant. HA uses the
+[pymochad library](https://github.com/mtreinish/pymochad) for interfacing with a mochad server, and that library was
+never properly updated to support the other line endings. This causes HA to not properly parse any messages from mochad, 
+and thus makes it unusable.
+
+This fork allows for mochad to be used with home assistant without needing to modify the pymochad library.
+The original readme is below, all the instructions are exactly the same.
+
 # MOCHAD
 
 `mochad` is a Linux TCP gateway daemon for the X10 CM15A RF (radio frequency) and
